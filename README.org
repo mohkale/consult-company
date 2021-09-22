@@ -1,0 +1,43 @@
+#+TITLE: consult-company
+#+AUTHOR: Mohsin Kaleem
+
+
+
+A [[https://github.com/minad/consult][consult]]ing-read interface for [[https://github.com/company-mode/company-mode][company-mode]].
+
+#+CAPTION: Obligatory screenshot of consult-company in action.
+[[https://user-images.githubusercontent.com/23294780/134369362-2737b57b-ba1c-4062-a063-ecb0ba785e13.png]]
+
+* Table of Contents                                                     :TOC:
+- [[#installation][Installation]]
+  - [[#manually][Manually]]
+  - [[#from-melpa][From MELPA]]
+  - [[#straight][straight]]
+- [[#usage][Usage]]
+
+* Installation
+** Manually
+   1. Clone the repo.
+   2. Add the repo path to your emacs ~load-path~.
+   3. Load it when needed.
+
+** From MELPA
+   TODO: Melpa support.
+
+** straight
+   You can also install this package through the [[https://github.com/raxod502/straight.el][straight]] package manager.
+   #+begin_src emacs-lisp
+     (straight-use-package '(consult-eglot :host github
+                                           :repo "mohkale/consult-eglot"))
+   #+end_src
+
+* Usage
+  I recommend remapping ~completion-at-point~ to ~consult-company~ in company-mode
+  buffers.
+
+  #+begin_src emacs-lisp
+    (define-key company-mode-map [remap completion-at-point] #'consult-company)
+  #+end_src
+
+  You can configure grouping and narrowing of company completion candidates through
+  ~consult-company-narrow~.
