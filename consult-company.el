@@ -4,7 +4,7 @@
 
 ;; Author: mohsin kaleem <mohkale@kisara.moe>
 ;; Package-Requires: ((emacs "27.1") (company "0.9") (consult "0.9"))
-;; Package-Version: 0.1
+;; Version: 0.1
 ;; URL: https://github.com/mohkale/consult-company
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -22,7 +22,11 @@
 
 ;;; Commentary:
 
-;; This package provides a command
+;; This package provides a command to interactively complete a company
+;; completion candidate through completing-read using the consult API.
+;; This works much like the builtin `completion-at-point' command except
+;; it can accept candidates from `company-backends' making it consistent
+;; with the completion candidates you would see in the company popup.
 
 ;;; Code:
 
@@ -84,8 +88,6 @@
 (defun consult-company ()
   "Interactively complete company candidates."
   (interactive)
-  (unless (bound-and-true-p company-mode)
-    (user-error "`company-completion-in-point' only works in `company-mode'"))
   (unless company-candidates
     (company-complete))
   (let ((cands (consult--with-increased-gc
