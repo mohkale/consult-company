@@ -1,6 +1,8 @@
 #+TITLE: consult-company
 #+AUTHOR: Mohsin Kaleem
 
+#+html: <p align="right"><a href="https://melpa.org/#/consult-company"><img align="center" alt="MELPA" src="https://melpa.org/packages/consult-company-badge.svg"/></a></p>
+
 
 
 A [[https://github.com/minad/consult][consult]]ing-read interface for [[https://github.com/company-mode/company-mode][company-mode]].
@@ -12,7 +14,6 @@ A [[https://github.com/minad/consult][consult]]ing-read interface for [[https://
 - [[#installation][Installation]]
   - [[#manually][Manually]]
   - [[#from-melpa][From MELPA]]
-  - [[#straight][straight]]
 - [[#usage][Usage]]
 
 * Installation
@@ -22,13 +23,13 @@ A [[https://github.com/minad/consult][consult]]ing-read interface for [[https://
    3. Load it when needed.
 
 ** From MELPA
-   TODO: Melpa support.
+   This package is on [[https://github.com/melpa/melpa][MELPA]]. You can add this to your ~package-archives~ variable and
+   then install through ~M-x package-install~.
 
-** straight
-   You can also install this package through the [[https://github.com/raxod502/straight.el][straight]] package manager.
    #+begin_src emacs-lisp
-     (straight-use-package '(consult-eglot :host github
-                                           :repo "mohkale/consult-eglot"))
+     (push '("melpa" . "https://melpa.org/packages/") package-archives)
+     (package-refresh-contents)
+     (package-install 'consult-company)
    #+end_src
 
 * Usage
