@@ -85,6 +85,7 @@
               (add-text-properties 0 1 (list 'consult--type (cadr narrow)) cand-str))
            collect (cons cand-str cand)))
 
+;;;###autoload
 (defun consult-company ()
   "Interactively complete company candidates."
   (interactive)
