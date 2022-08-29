@@ -133,7 +133,7 @@ a completion-kind with the configured keys."
           (unless (string-empty-p annotation)
             (concat
              (propertize " " 'display `(space :align-to (- right 1 ,(length annotation))))
-             annotation))))))))
+             (propertize annotation 'face 'completions-annotations)))))))))
 
 (provide 'consult-company)
 ;;; consult-company.el ends here
