@@ -54,6 +54,13 @@ those company-kinds."
                (cons (character :tag "Narrow key")
                      (string :tag "Display name"))))
 
+(defcustom consult-company-group-by-kind t
+  "Group completion candidates in the minibuffer by `consult-company-narrow'.
+This won't affect the actual narrowing functionality, just the presentation
+of completion candidates. Thus even when this is nil you can still narrow to
+a completion-kind with the configured keys."
+  :type 'boolean)
+
 (defun consult-company--candidates ()
   "Retrieve a list of candidates for `consult-company'."
   (cl-loop for cand in company-candidates
@@ -105,7 +112,9 @@ those company-kinds."
       :prompt "Candidate: "
       :lookup #'consult--lookup-cdr
       :sort nil
-      :group (consult--type-group narrow-assoc)
+      :group
+      (when consult-company-group-by-kind
+        (consult--type-group narrow-assoc))
       :narrow
       (let* ((narrow (consult--type-narrow narrow-assoc))
              (pred (plist-get narrow :predicate)))
