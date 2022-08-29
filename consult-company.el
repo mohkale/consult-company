@@ -39,13 +39,16 @@
   :group 'consult)
 
 (defcustom consult-company-narrow
-  ;; Takes the same keys as `company-text-icons-mapping'.
   `((color ?# . "Color")
     ((file folder) ?f . "Files")
     (text ?w . "Word")
     (snippet ?s . "Snippet")
     (t ?c . "Completion"))
-  "Narrow configuration for `consult-company'."
+  "Narrow configuration for `consult-company'.
+Each entry should be a list beginning with either a symbol or list
+of symbols with the same keys as `company-text-icons-mapping' and
+ending with a cons cell of the `consult' narrow key and title for
+those company-kinds."
   :type '(list (choice (symbol :tag "Completion kind")
                        (repeat (symbol :tag "Completion kind")))
                (cons (character :tag "Narrow key")
