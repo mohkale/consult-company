@@ -143,7 +143,9 @@ quitting."
         ;; Create a split if previews should be in a split.
         (when (and location
                    window-configuration
-                   (not split-window))
+                   (or
+                    (not split-window)
+                    (not (window-valid-p split-window))))
           (setq split-window
                 (display-buffer
                  (if (markerp location)
@@ -158,7 +160,8 @@ quitting."
         ;; Restore the original window configuration.
         (when (and split-window (eq action 'return))
           (ignore-errors
-            (set-window-configuration window-configuration)))))))
+            (set-window-configuration window-configuration))
+          (setq split-window nil))))))
 
 (defun consult-company--candidate-location (orig-buffer cand)
   "Map a `company' CAND to its location.
