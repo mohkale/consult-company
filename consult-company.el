@@ -61,6 +61,21 @@ of completion candidates. Thus even when this is nil you can still narrow to
 a completion-kind with the configured keys."
   :type 'boolean)
 
+(defcustom consult-company-preview-function nil
+  "Preview function to use for `consult-company'.
+This should be a function accepting the source buffer where
+the completion candidates were generated and returning a state
+callback as expected by `consult'."
+  :type '(choice
+          (const :tag "Use location of completion candidate"
+                 consult-company-preview-location)
+          (const :tag "Use documentation associated with candidate"
+                 consult-company-preview-doc-buffer)
+          function
+          (const :tag "No state function" nil)))
+
+
+
 (defun consult-company--candidates ()
   "Retrieve a list of candidates for `consult-company'."
   (cl-loop for cand in company-candidates
@@ -94,6 +109,48 @@ a completion-kind with the configured keys."
                                    (assoc t consult-company-narrow))))
               (add-text-properties 0 1 (list 'consult--type (cadr narrow)) cand-str))
            collect (cons cand-str cand)))
+
+(defun consult-company-preview-location (orig-buffer)
+  "`consult-company' preview function showing completion location.
+This preview function will make `consult-company' show the definition
+of each completion candidate as its selected in the minibuffer. This
+requires the completion backend which provides this completion to
+support the 'location request.
+
+ORIG-BUFFER is the source buffer where the completion candidates were
+generated."
+  (let ((preview (consult--jump-preview)))
+    (lambda (action cand)
+      (let* ((location (with-current-buffer orig-buffer
+                         (company-call-backend 'location cand)))
+             (location (when location
+                         (let ((marker (make-marker)))
+                           (set-marker marker (cdr location) (car location))
+                           marker))))
+        (funcall preview action location)
+        (when (and location (eq action 'return))
+          (consult--jump location))))))
+
+(defun consult-company-preview-doc-buffer (orig-buffer)
+  "`consult-company' preview function showing completion documentation.
+This preview function will make `consult-company' show the documentation
+of each completion candidate as its selected in the minibuffer. This
+requires the completion backend which provides this completion to
+support the 'doc-buffer request.
+
+ORIG-BUFFER is the source buffer where the completion candidates were
+generated."
+  (let ((preview (consult--buffer-preview)))
+    (lambda (action cand)
+      (let* ((doc-buffer (with-current-buffer orig-buffer
+                           (company-call-backend 'doc-buffer cand))))
+        (when (consp doc-buffer)
+          (setq ;; start (cdr doc-buffer)
+                doc-buffer (car doc-buffer)))
+
+        (funcall preview action doc-buffer)
+        (when (and cand (eq action 'return))
+          (consult--buffer-action doc-buffer))))))
 
 (defun consult-company--read ()
   "Read a company candidate."
@@ -131,7 +188,10 @@ a completion-kind with the configured keys."
          (unless (string-empty-p annotation)
            (concat
             (propertize " " 'display `(space :align-to (- right 1 ,(length annotation))))
-            (propertize annotation 'face 'completions-annotations))))))))
+            (propertize annotation 'face 'completions-annotations)))))
+     :state
+     (when consult-company-preview-function
+       (funcall consult-company-preview-function original-buffer)))))
 
 ;;;###autoload
 (defun consult-company (cand)
