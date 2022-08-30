@@ -61,7 +61,8 @@ of completion candidates. Thus even when this is nil you can still narrow to
 a completion-kind with the configured keys."
   :type 'boolean)
 
-(defcustom consult-company-preview-function nil
+(defcustom consult-company-preview-function
+  #'consult-company-preview-doc-buffer
   "Preview function to use for `consult-company'.
 This should be a function accepting the source buffer where
 the completion candidates were generated and returning a state
@@ -73,6 +74,12 @@ callback as expected by `consult'."
                  consult-company-preview-doc-buffer)
           function
           (const :tag "No state function" nil)))
+
+(defcustom consult-company-preview-split-window t
+  "Whether `consult-company' previews should happen in a split buffer.
+This variable is only meaningful when `consult-company-preview-function'
+is non-nil."
+  :type 'boolean)
 
 
 
@@ -110,6 +117,58 @@ callback as expected by `consult'."
               (add-text-properties 0 1 (list 'consult--type (cadr narrow)) cand-str))
            collect (cons cand-str cand)))
 
+(defun consult-company--preview-wrapper
+    (preview-function preview-action location-processor)
+  "Helper to generate a preview function for `consult-company'.
+PREVIEW-FUNCTION should be a function to call with each candidate
+that a preview is attempted on. PREVIEW-ACTION is called on 'return
+to reset the preview. LOCATION-PROCESSOR is a function which should
+convert each candidate into something PREVIEW-FUNCTION and
+PREVIEW-ACTION can process.
+
+Note: It's assumed the result of LOCATION-PROCESSOR is a marker or
+buffer.
+
+This function will respect the value of `consult-company-preview-split-window'.
+When set this function will automatically show the candidate previews
+in a separate buffer and restore the original window configuration before
+quitting."
+  (let ((preview (funcall preview-function))
+        (window-configuration
+         (when consult-company-preview-split-window
+           (current-window-configuration)))
+        split-window)
+    (lambda (action cand)
+      (let ((location (funcall location-processor cand)))
+        ;; Create a split if previews should be in a split.
+        (when (and location
+                   window-configuration
+                   (not split-window))
+          (setq split-window
+                (display-buffer
+                 (if (markerp location)
+                     (marker-buffer location)
+                   location)
+                 t)))
+        ;; Invoke preview action in the correct window.
+        (with-selected-window (or split-window (selected-window))
+          (funcall preview action location)
+          (when (and location (eq action 'return))
+            (funcall preview-action location)))
+        ;; Restore the original window configuration.
+        (when (and split-window (eq action 'return))
+          (set-window-configuration window-configuration))))))
+
+(defun consult-company--candidate-location (orig-buffer cand)
+  "Map a `company' CAND to its location.
+ORIG-BUFFER should be the buffer CAND was generated in."
+  (when-let ((location
+              (with-current-buffer orig-buffer
+                (company-call-backend 'location cand))))
+    (let ((marker (make-marker)))
+      (set-marker marker (cdr location) (car location))
+      marker)))
+
 (defun consult-company-preview-location (orig-buffer)
   "`consult-company' preview function showing completion location.
 This preview function will make `consult-company' show the definition
@@ -119,17 +178,24 @@ support the 'location request.
 
 ORIG-BUFFER is the source buffer where the completion candidates were
 generated."
-  (let ((preview (consult--jump-preview)))
-    (lambda (action cand)
-      (let* ((location (with-current-buffer orig-buffer
-                         (company-call-backend 'location cand)))
-             (location (when location
-                         (let ((marker (make-marker)))
-                           (set-marker marker (cdr location) (car location))
-                           marker))))
-        (funcall preview action location)
-        (when (and location (eq action 'return))
-          (consult--jump location))))))
+  (consult-company--preview-wrapper
+   #'consult--jump-preview
+   #'consult--jump
+   (apply-partially #'consult-company--candidate-location orig-buffer)))
+
+(defun consult-company--candidate-doc-buffer (orig-buffer cand)
+  "Map a `company' CAND to a documentation buffer and marker.
+ORIG-BUFFER should be the buffer CAND was generated in."
+  (when-let ((doc-buffer
+              (with-current-buffer orig-buffer
+                (company-call-backend 'doc-buffer cand))))
+    (get-buffer
+     (if (consp doc-buffer)
+         ;; TODO: car is supposed to be a point in the buffer
+         ;; but is it worth extracting and interfacing with it
+         ;; as a marker?
+         (cdr doc-buffer)
+       doc-buffer))))
 
 (defun consult-company-preview-doc-buffer (orig-buffer)
   "`consult-company' preview function showing completion documentation.
@@ -140,17 +206,10 @@ support the 'doc-buffer request.
 
 ORIG-BUFFER is the source buffer where the completion candidates were
 generated."
-  (let ((preview (consult--buffer-preview)))
-    (lambda (action cand)
-      (let* ((doc-buffer (with-current-buffer orig-buffer
-                           (company-call-backend 'doc-buffer cand))))
-        (when (consp doc-buffer)
-          (setq ;; start (cdr doc-buffer)
-                doc-buffer (car doc-buffer)))
-
-        (funcall preview action doc-buffer)
-        (when (and cand (eq action 'return))
-          (consult--buffer-action doc-buffer))))))
+  (consult-company--preview-wrapper
+   #'consult--buffer-preview
+   #'consult--buffer-action
+   (apply-partially #'consult-company--candidate-doc-buffer orig-buffer)))
 
 (defun consult-company--read ()
   "Read a company candidate."
