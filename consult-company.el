@@ -113,6 +113,7 @@ a completion-kind with the configured keys."
       :prompt "Candidate: "
       :lookup #'consult--lookup-cdr
       :sort nil
+      :category 'consult-company
       :group
       (when consult-company-group-by-kind
         (consult--type-group narrow-assoc))
