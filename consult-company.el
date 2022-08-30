@@ -4,7 +4,7 @@
 
 ;; Author: mohsin kaleem <mohkale@kisara.moe>
 ;; Package-Requires: ((emacs "27.1") (company "0.9") (consult "0.9"))
-;; Version: 0.1
+;; Version: 0.2
 ;; URL: https://github.com/mohkale/consult-company
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -103,7 +103,8 @@ a completion-kind with the configured keys."
     (company-complete))
   (let ((cands (consult--with-increased-gc
                 (consult-company--candidates)))
-        (narrow-assoc (mapcar #'cdr consult-company-narrow)))
+        (narrow-assoc (mapcar #'cdr consult-company-narrow))
+        (original-buffer (current-buffer)))
     (unless cands
       (user-error "No completion candidates available"))
     (company-finish
@@ -112,6 +113,7 @@ a completion-kind with the configured keys."
       :prompt "Candidate: "
       :lookup #'consult--lookup-cdr
       :sort nil
+      :category 'consult-company
       :group
       (when consult-company-group-by-kind
         (consult--type-group narrow-assoc))
@@ -121,7 +123,18 @@ a completion-kind with the configured keys."
         `(:predicate
           ,(lambda (cand)
              (funcall pred (car cand)))
-          ,@narrow))))))
+          ,@narrow))
+      :annotate
+      (lambda (cand)
+        (when-let* ((company-cand (consult--lookup-cdr cand cands))
+                    (annotation
+                     (with-current-buffer original-buffer
+                       (company-call-backend 'annotation company-cand)))
+                    (annotation (company--clean-string annotation)))
+          (unless (string-empty-p annotation)
+            (concat
+             (propertize " " 'display `(space :align-to (- right 1 ,(length annotation))))
+             (propertize annotation 'face 'completions-annotations)))))))))
 
 (provide 'consult-company)
 ;;; consult-company.el ends here
