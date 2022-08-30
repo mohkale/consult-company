@@ -162,7 +162,8 @@ quitting."
 (defun consult-company--candidate-location (orig-buffer cand)
   "Map a `company' CAND to its location.
 ORIG-BUFFER should be the buffer CAND was generated in."
-  (when-let ((location
+  (when-let ((cand cand)
+             (location
               (with-current-buffer orig-buffer
                 (company-call-backend 'location cand))))
     (let ((marker (make-marker)))
@@ -186,7 +187,8 @@ generated."
 (defun consult-company--candidate-doc-buffer (orig-buffer cand)
   "Map a `company' CAND to a documentation buffer and marker.
 ORIG-BUFFER should be the buffer CAND was generated in."
-  (when-let ((doc-buffer
+  (when-let ((cand cand)
+             (doc-buffer
               (with-current-buffer orig-buffer
                 (company-call-backend 'doc-buffer cand))))
     (get-buffer
