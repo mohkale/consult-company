@@ -157,7 +157,8 @@ quitting."
             (funcall preview-action location)))
         ;; Restore the original window configuration.
         (when (and split-window (eq action 'return))
-          (set-window-configuration window-configuration))))))
+          (ignore-errors
+            (set-window-configuration window-configuration)))))))
 
 (defun consult-company--candidate-location (orig-buffer cand)
   "Map a `company' CAND to its location.
