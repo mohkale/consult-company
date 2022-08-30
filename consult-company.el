@@ -95,10 +95,8 @@ a completion-kind with the configured keys."
               (add-text-properties 0 1 (list 'consult--type (cadr narrow)) cand-str))
            collect (cons cand-str cand)))
 
-;;;###autoload
-(defun consult-company ()
-  "Interactively complete company candidates."
-  (interactive)
+(defun consult-company--read ()
+  "Read a company candidate."
   (unless company-candidates
     (company-complete))
   (let ((cands (consult--with-increased-gc
@@ -107,34 +105,41 @@ a completion-kind with the configured keys."
         (original-buffer (current-buffer)))
     (unless cands
       (user-error "No completion candidates available"))
-    (company-finish
-     (consult--read
-      cands
-      :prompt "Candidate: "
-      :lookup #'consult--lookup-cdr
-      :sort nil
-      :category 'consult-company
-      :group
-      (when consult-company-group-by-kind
-        (consult--type-group narrow-assoc))
-      :narrow
-      (let* ((narrow (consult--type-narrow narrow-assoc))
-             (pred (plist-get narrow :predicate)))
-        `(:predicate
-          ,(lambda (cand)
-             (funcall pred (car cand)))
-          ,@narrow))
-      :annotate
-      (lambda (cand)
-        (when-let* ((company-cand (consult--lookup-cdr cand cands))
-                    (annotation
-                     (with-current-buffer original-buffer
-                       (company-call-backend 'annotation company-cand)))
-                    (annotation (company--clean-string annotation)))
-          (unless (string-empty-p annotation)
-            (concat
-             (propertize " " 'display `(space :align-to (- right 1 ,(length annotation))))
-             (propertize annotation 'face 'completions-annotations)))))))))
+    (consult--read
+     cands
+     :prompt "Candidate: "
+     :lookup #'consult--lookup-cdr
+     :sort nil
+     :category 'consult-company
+     :group
+     (when consult-company-group-by-kind
+       (consult--type-group narrow-assoc))
+     :narrow
+     (let* ((narrow (consult--type-narrow narrow-assoc))
+            (pred (plist-get narrow :predicate)))
+       `(:predicate
+         ,(lambda (cand)
+            (funcall pred (car cand)))
+         ,@narrow))
+     :annotate
+     (lambda (cand)
+       (when-let* ((company-cand (consult--lookup-cdr cand cands))
+                   (annotation
+                    (with-current-buffer original-buffer
+                      (company-call-backend 'annotation company-cand)))
+                   (annotation (company--clean-string annotation)))
+         (unless (string-empty-p annotation)
+           (concat
+            (propertize " " 'display `(space :align-to (- right 1 ,(length annotation))))
+            (propertize annotation 'face 'completions-annotations))))))))
+
+;;;###autoload
+(defun consult-company (cand)
+  "Interactively complete a company candidate.
+CAND should be an entry in `company-candidates'."
+  (interactive
+   (list (consult-company--read)))
+  (company-finish cand))
 
 (provide 'consult-company)
 ;;; consult-company.el ends here
