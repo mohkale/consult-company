@@ -111,6 +111,7 @@ a completion-kind with the configured keys."
      (consult--read
       cands
       :prompt "Candidate: "
+      :initial (thing-at-point 'symbol)
       :lookup #'consult--lookup-cdr
       :sort nil
       :category 'consult-company
