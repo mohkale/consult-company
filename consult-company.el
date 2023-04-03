@@ -100,7 +100,9 @@ a completion-kind with the configured keys."
   "Interactively complete company candidates."
   (interactive)
   (unless company-candidates
-    (company-complete))
+    (let ((this-command this-command))
+      (company-complete)))
+
   (let ((cands (consult--with-increased-gc
                 (consult-company--candidates)))
         (narrow-assoc (mapcar #'cdr consult-company-narrow))
