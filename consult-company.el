@@ -99,44 +99,49 @@ a completion-kind with the configured keys."
 (defun consult-company ()
   "Interactively complete company candidates."
   (interactive)
-  (unless company-candidates
-    (let ((this-command this-command))
-      (company-complete)))
 
-  (let ((cands (consult--with-increased-gc
-                (consult-company--candidates)))
-        (narrow-assoc (mapcar #'cdr consult-company-narrow))
-        (original-buffer (current-buffer)))
+  (let* ((cancel-after-finish
+          (unless company-candidates
+            (let ((this-command this-command))
+              (company-manual-begin))
+            t))
+         (cands (consult--with-increased-gc
+                 (consult-company--candidates)))
+         (narrow-assoc (mapcar #'cdr consult-company-narrow))
+         (original-buffer (current-buffer)))
     (unless cands
       (user-error "No completion candidates available"))
-    (company-finish
-     (consult--read
-      cands
-      :prompt "Candidate: "
-      :lookup #'consult--lookup-cdr
-      :sort nil
-      :category 'consult-company
-      :group
-      (when consult-company-group-by-kind
-        (consult--type-group narrow-assoc))
-      :narrow
-      (let* ((narrow (consult--type-narrow narrow-assoc))
-             (pred (plist-get narrow :predicate)))
-        `(:predicate
-          ,(lambda (cand)
-             (funcall pred (car cand)))
-          ,@narrow))
-      :annotate
-      (lambda (cand)
-        (when-let* ((company-cand (consult--lookup-cdr cand cands))
-                    (annotation
-                     (with-current-buffer original-buffer
-                       (company-call-backend 'annotation company-cand)))
-                    (annotation (company--clean-string annotation)))
-          (unless (string-empty-p annotation)
-            (concat
-             (propertize " " 'display `(space :align-to (- right 1 ,(length annotation))))
-             (propertize annotation 'face 'completions-annotations)))))))))
+    (unwind-protect
+        (company-finish
+         (consult--read
+          cands
+          :prompt "Candidate: "
+          :lookup #'consult--lookup-cdr
+          :sort nil
+          :category 'consult-company
+          :group
+          (when consult-company-group-by-kind
+            (consult--type-group narrow-assoc))
+          :narrow
+          (let* ((narrow (consult--type-narrow narrow-assoc))
+                 (pred (plist-get narrow :predicate)))
+            `(:predicate
+              ,(lambda (cand)
+                 (funcall pred (car cand)))
+              ,@narrow))
+          :annotate
+          (lambda (cand)
+            (when-let* ((company-cand (consult--lookup-cdr cand cands))
+                        (annotation
+                         (with-current-buffer original-buffer
+                           (company-call-backend 'annotation company-cand)))
+                        (annotation (company--clean-string annotation)))
+              (unless (string-empty-p annotation)
+                (concat
+                 (propertize " " 'display `(space :align-to (- right 1 ,(length annotation))))
+                 (propertize annotation 'face 'completions-annotations)))))))
+      (when cancel-after-finish
+        (company-abort)))))
 
 (provide 'consult-company)
 ;;; consult-company.el ends here
